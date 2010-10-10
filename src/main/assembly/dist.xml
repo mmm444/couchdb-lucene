@@ -22,22 +22,22 @@
     <file>
       <source>${project.basedir}/src/main/bin/couchdb-lucene</source>
       <fileMode>755</fileMode>
-      <outputDirectory>/bin</outputDirectory>
+      <outputDirectory>bin</outputDirectory>
     </file>
     <file>
       <source>${project.basedir}/src/main/conf/couchdb-lucene.ini</source>
       <fileMode>644</fileMode>
-      <outputDirectory>/etc/couchdb-lucene</outputDirectory>
+      <outputDirectory>etc/couchdb-lucene</outputDirectory>
     </file>
     <file>
       <source>${project.basedir}/src/main/conf/log4j.xml</source>
       <fileMode>644</fileMode>
-      <outputDirectory>/etc/couchdb-lucene</outputDirectory>
+      <outputDirectory>etc/couchdb-lucene</outputDirectory>
     </file>
     <file>
       <source>${project.basedir}/couchdb-external-hook.py</source>
       <fileMode>755</fileMode>
-      <outputDirectory>/bin</outputDirectory>
+      <outputDirectory>bin</outputDirectory>
     </file>
     <file>
       <source>${project.basedir}/src/main/tools/etc/init.d/couchdb-lucene</source>
@@ -48,7 +48,7 @@
   <dependencySets>
     <dependencySet>
       <scope>runtime</scope>
-      <outputDirectory>/lib/couchdb-lucene</outputDirectory>
+      <outputDirectory>lib/couchdb-lucene</outputDirectory>
     </dependencySet>
   </dependencySets>
 </assembly>
