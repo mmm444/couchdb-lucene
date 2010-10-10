@@ -7,7 +7,7 @@
   <fileSets>
     <fileSet>
       <directory>${project.basedir}</directory>
-      <outputDirectory>/usr/share/doc/couchdb-lucene</outputDirectory>
+      <outputDirectory>share/doc/couchdb-lucene</outputDirectory>
       <includes>
         <include>README*</include>
         <include>LICENSE*</include>
