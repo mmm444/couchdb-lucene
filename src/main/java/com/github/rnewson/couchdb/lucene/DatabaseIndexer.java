@@ -470,7 +470,7 @@ public final class DatabaseIndexer implements Runnable, ResponseHandler<Void> {
 			}
 			for (final String queryString : getQueryStrings(req)) {
 				final boolean lcExpTerms = getBooleanParameter(req, 
-						"lowercase_expanded_terms");
+						"lowercase_expanded_terms", true);
 				final Query q = state.parse(queryString, lcExpTerms);
 				final JSONObject queryRow = new JSONObject();
 				queryRow.put("q", q.toString());
@@ -681,10 +681,16 @@ public final class DatabaseIndexer implements Runnable, ResponseHandler<Void> {
 	private Term forceTerm() {
 		return new Term("_cl", uuid.toString());
 	}
-
+	
 	private boolean getBooleanParameter(final HttpServletRequest req,
 			final String parameterName) {
 		return Boolean.parseBoolean(req.getParameter(parameterName));
+	}
+
+	private boolean getBooleanParameter(final HttpServletRequest req,
+			final String parameterName, boolean defaultValue) {
+		final String result = req.getParameter(parameterName);
+		return result != null ? Boolean.parseBoolean(result) : defaultValue;
 	}
 
 	private int getIntParameter(final HttpServletRequest req,
