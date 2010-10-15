@@ -126,9 +126,11 @@ public final class DatabaseIndexer implements Runnable, ResponseHandler<Void> {
 			returnReader(searcher.getIndexReader());
 		}
 
-		public Query parse(final String query) throws ParseException {
+		public Query parse(final String query, boolean lcExpTerms)
+				throws ParseException {
 			final QueryParser parser = new CustomQueryParser(Constants.VERSION,
 					Constants.DEFAULT_FIELD, analyzer);
+			parser.setLowercaseExpandedTerms(lcExpTerms);
 			return parser.parse(query);
 		}
 
@@ -467,7 +469,9 @@ public final class DatabaseIndexer implements Runnable, ResponseHandler<Void> {
 				return;
 			}
 			for (final String queryString : getQueryStrings(req)) {
-				final Query q = state.parse(queryString);
+				final boolean lcExpTerms = getBooleanParameter(req, 
+						"lowercase_expanded_terms");
+				final Query q = state.parse(queryString, lcExpTerms);
 				final JSONObject queryRow = new JSONObject();
 				queryRow.put("q", q.toString());
 				if (getBooleanParameter(req, "debug")) {
