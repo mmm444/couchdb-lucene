@@ -126,11 +126,12 @@ public final class DatabaseIndexer implements Runnable, ResponseHandler<Void> {
 			returnReader(searcher.getIndexReader());
 		}
 
-		public Query parse(final String query, boolean lcExpTerms)
+		public Query parse(final String query, boolean lcExpTerms, boolean allowLeadingWildcard)
 				throws ParseException {
 			final QueryParser parser = new CustomQueryParser(Constants.VERSION,
 					Constants.DEFAULT_FIELD, analyzer);
 			parser.setLowercaseExpandedTerms(lcExpTerms);
+			parser.setAllowLeadingWildcard(allowLeadingWildcard);
 			return parser.parse(query);
 		}
 
@@ -471,7 +472,8 @@ public final class DatabaseIndexer implements Runnable, ResponseHandler<Void> {
 			for (final String queryString : getQueryStrings(req)) {
 				final boolean lcExpTerms = getBooleanParameter(req, 
 						"lowercase_expanded_terms", true);
-				final Query q = state.parse(queryString, lcExpTerms);
+				final boolean allowLeadingWildcard = getBooleanParameter(req, "allow_leading_wildcard", false);
+				final Query q = state.parse(queryString, lcExpTerms, allowLeadingWildcard);
 				final JSONObject queryRow = new JSONObject();
 				queryRow.put("q", q.toString());
 				if (getBooleanParameter(req, "debug")) {
