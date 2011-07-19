@@ -25,6 +25,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.StringEntity;
+import org.json.JSONObject;
 
 import com.github.rnewson.couchdb.lucene.util.Constants;
 import com.github.rnewson.couchdb.lucene.util.ErrorPreservingResponseHandler;
@@ -44,17 +45,18 @@ public final class HttpUtils {
         return execute(httpClient, new HttpGet(url));
     }
 
-    public static final String post(final HttpClient httpClient, final String url, final String body) throws IOException {
+    public static final String post(final HttpClient httpClient, final String url, final JSONObject body) throws IOException {
         final HttpPost post = new HttpPost(url);
-        post.setEntity(new StringEntity(body));
+        post.setHeader("Content-Type", Constants.APPLICATION_JSON);
+        post.setEntity(new StringEntity(body.toString(), "UTF-8"));
         return execute(httpClient, post);
     }
 
     public static final int put(final HttpClient httpClient, final String url, final String body) throws IOException {
         final HttpPut put = new HttpPut(url);
         if (body != null) {
-            put.setHeader("Content-Type", Constants.CONTENT_TYPE);
-            put.setEntity(new StringEntity(body));
+            put.setHeader("Content-Type", Constants.APPLICATION_JSON);
+            put.setEntity(new StringEntity(body, "UTF-8"));
         }
         return httpClient.execute(put, new StatusCodeResponseHandler());
     }

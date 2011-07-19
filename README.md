@@ -4,13 +4,13 @@
 <tr><th>CouchDB</th><th>couchdb-lucene</th></tr>
 <tr><td>0.9.1, 0.10</td><td>0.4</td></tr>
 <tr><td>0.11</td><td>0.4-maint (0.4 with patch for trunk compatibility)</td></tr>
-<tr><td>0.10.x, 0.11.x, 1.0.x</td><td>0.5.x</td></tr>
+<tr><td>0.10.x, 0.11.x, 1.0.x, 1.1.x</td><td>0.5.x, 0.6.x, 0.7.x</td></tr>
 </table>
 
 <h1>Breaking Changes</h1>
 
 <ul>
-<li>couchdb-lucene 0.5.x runs as a standalone daemon (0.4 was run directly by couchdb).
+<li>couchdb-lucene 0.5.x and higher runs as a standalone daemon (0.4 was run directly by couchdb).
 <li>URL's now require the full design document id (where you would say "foo", you must now say "_design/foo").
 </ul>
 
@@ -20,20 +20,37 @@ Issue tracking at <a href="http://github.com/rnewson/couchdb-lucene/issues">gith
 
 <h1>Minimum System Requirements</h1>
 
-Java 1.5 (or above) is required; the Sun version is recommended as it's regularly tested against.
+Java 1.5 (or above) is required; the <strike>Sun</strike> Oracle version is recommended as it's regularly tested against.
 
-<h1>Build couchdb-lucene</h1>
+<h1>Build and run couchdb-lucene</h1>
+
+If you are on OS X, you might find it easiest to;
+
+<pre>
+brew install couchdb-lucene
+</pre>
 
 <ol>
 <li>Install Maven 2.
 <li>checkout repository
 <li>type 'mvn'
-<li>configure couchdb (see below)
+<li>cd target
+<li>unzip couchdb-lucene-&lt;version&gt;.zip
+<li>cd couchdb-lucene-&lt;version&gt;
+<li>./bin/run
 </ol>
 
-You will now have a zip file in the target/ directory. This contains all the couchdb-lucene code, dependencies, startup scripts and configuration files to run couchdb-lucene.
+The zip file contains all the couchdb-lucene code, dependencies, startup scripts and configuration files you need, so unzip it wherever you wish to install couchdb-lucene.
+
+If you want to run couchdb-lucene on a servlet container like Tomcat, you can build the war file using Maven
+
+<pre>
+mvn war:war
+</pre>
 
 <h1>Configure CouchDB</h1>
+
+The following settings are needed in CouchDB's local.ini file in order for it to communicate with couchdb-lucene;
 
 <pre>
 [couchdb]
@@ -174,10 +191,23 @@ Lucene has numerous ways of converting free-form text into tokens, these classes
 <li>porter</li>
 <li>russian</li>
 <li>simple</li>
+<li>snowball</li>
 <li>standard</li>
 <li>thai</li>
 <li>whitespace</li>
 </ul>
+
+<h4>The Snowball Analyzer</h4>
+
+This analyzer requires an extra argument to specify the language (see <a href="http://lucene.apache.org/java/3_0_3/api/contrib-snowball/org/apache/lucene/analysis/snowball/SnowballAnalyzer.html">here</a> for details);
+
+<pre>
+"analyzer":"snowball:English"
+</pre>
+
+Note: the argument is case-sensitive and is passed directly to the <code>SnowballAnalyzer</code>'s constructor.
+
+<h4>The Per-field Analyzer"</h4>
 
 The "perfield" option lets you use a different analyzer for different fields and is configured as follows;
 
@@ -376,8 +406,10 @@ Fields indexed with numeric types can still be queried as normal terms, couchdb-
 The following parameters can be passed for more sophisticated searches;
 
 <dl>
-<dt>callback</dt><dd>Specify a JSONP callback wrapper. The full JSON result will be prepended with this parameter and also placed with parentheses."
+<dt>analyzer</dt><dd>Override the default analyzer used to parse the q parameter</dd>
+<dt>callback</dt><dd>Specify a JSONP callback wrapper. The full JSON result will be prepended with this parameter and also placed with parentheses."</dd>
 <dt>debug</dt><dd>Setting this to true disables response caching (the query is executed every time) and indents the JSON response for readability.</dd>
+<dt>default_operator</dt><dd>Change the default operator for boolean queries. Defaults to "OR", other permitted value is "AND".</dd>
 <dt>force_json<dt><dd>Usually couchdb-lucene determines the Content-Type of its response based on the presence of the Accept header. If Accept contains "application/json", you get "application/json" in the response, otherwise you get "text/plain;charset=utf8". Some tools, like JSONView for FireFox, do not send the Accept header but do render "application/json" responses if received. Setting force_json=true forces all response to "application/json" regardless of the Accept header.</dd>
 <dt>include_docs</dt><dd>whether to include the source docs</dd>
 <dt>limit</dt><dd>the maximum number of results to return</dd>

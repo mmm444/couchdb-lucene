@@ -18,13 +18,17 @@ package com.github.rnewson.couchdb.lucene;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.queryParser.ParseException;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.JavaScriptException;
@@ -42,14 +46,14 @@ import com.github.rnewson.couchdb.lucene.rhino.RhinoDocument;
 
 public final class DocumentConverter {
 
-    private static final Document[] NO_DOCUMENTS = new Document[0];
+    private static final Collection<Document> NO_DOCUMENTS = Collections.emptyList();
     private static final Logger LOG = Logger.getLogger(DocumentConverter.class);
 
     private final Context context;
     private final Function viewFun;
     private final ScriptableObject scope;
 
-    public DocumentConverter(final Context context, final View view) throws IOException {
+    public DocumentConverter(final Context context, final View view) throws IOException, JSONException {
         this.context = context;
         scope = context.initStandardObjects();
 
@@ -71,10 +75,10 @@ public final class DocumentConverter {
         viewFun = view.compileFunction(context, scope);
     }
 
-    public Document[] convert(
+    public Collection<Document> convert(
             final CouchDocument doc,
             final ViewSettings defaults,
-            final Database database) throws IOException, ParseException {
+            final Database database) throws IOException, ParseException, JSONException {
         final Object result;
         final Scriptable scriptable = convertObject(doc.asJson());
 
@@ -92,12 +96,12 @@ public final class DocumentConverter {
         if (result instanceof RhinoDocument) {
             final RhinoDocument rhinoDocument = (RhinoDocument) result;
             final Document document = rhinoDocument.toDocument(doc.getId(), defaults, database);
-            return new Document[]{document};
+            return Collections.singleton(document);
         }
 
         if (result instanceof NativeArray) {
             final NativeArray nativeArray = (NativeArray) result;
-            final Document[] arrayResult = new Document[(int) nativeArray.getLength()];
+            final Collection<Document> arrayResult = new ArrayList<Document>((int) nativeArray.getLength());
             for (int i = 0; i < (int) nativeArray.getLength(); i++) {
                 if (nativeArray.get(i, null) instanceof RhinoDocument) {
                     final RhinoDocument rhinoDocument = (RhinoDocument) nativeArray.get(i, null);
@@ -105,7 +109,7 @@ public final class DocumentConverter {
                             doc.getId(),
                             defaults,
                             database);
-                    arrayResult[i] = document;
+                    arrayResult.add(document);
                 }
             }
             return arrayResult;
@@ -114,9 +118,11 @@ public final class DocumentConverter {
         return null;
     }
 
-    private Object convert(final Object obj) {
+    private Object convert(final Object obj) throws JSONException {
         if (obj instanceof JSONArray) {
             return convertArray((JSONArray) obj);
+        } else if (obj == JSONObject.NULL) {
+            return null;
         } else if (obj instanceof JSONObject) {
             return convertObject((JSONObject) obj);
         } else {
@@ -124,22 +130,24 @@ public final class DocumentConverter {
         }
     }
 
-    private Scriptable convertArray(final JSONArray array) {
-        final Scriptable result = context.newArray(scope, array.size());
-        for (int i = 0, max = array.size(); i < max; i++) {
+    private Scriptable convertArray(final JSONArray array) throws JSONException {
+        final Scriptable result = context.newArray(scope, array.length());
+        for (int i = 0, max = array.length(); i < max; i++) {
             ScriptableObject.putProperty(result, i, convert(array.get(i)));
         }
         return result;
     }
 
-    private Scriptable convertObject(final JSONObject obj) {
-    	if (obj.isNullObject()) {
+    private Scriptable convertObject(final JSONObject obj) throws JSONException {
+    	if (obj == JSONObject.NULL) {
     		return null;
     	}
         final Scriptable result = context.newObject(scope);
-        for (final Object key : obj.keySet()) {
+        final Iterator<?> it = obj.keys();
+        while (it.hasNext()) {
+            final String key = (String) it.next();
             final Object value = obj.get(key);
-            ScriptableObject.putProperty(result, (String) key, convert(value));
+            ScriptableObject.putProperty(result, key, convert(value));
         }
         return result;
     }

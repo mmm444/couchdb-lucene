@@ -21,18 +21,23 @@
       <outputDirectory>/bin</outputDirectory>
     </file>
     <file>
-      <source>${project.basedir}/src/main/conf/couchdb-lucene.ini</source>
+      <source>${project.basedir}/src/main/bin/kill_ppid</source>
+      <fileMode>755</fileMode>
+      <outputDirectory>/bin</outputDirectory>
+    </file>
+    <file>
+      <source>${project.basedir}/src/main/resources/couchdb-lucene.ini</source>
       <fileMode>644</fileMode>
       <outputDirectory>/conf</outputDirectory>
     </file>
     <file>
-      <source>${project.basedir}/src/main/conf/log4j.xml</source>
+      <source>${project.basedir}/src/main/resources/log4j.xml</source>
       <fileMode>644</fileMode>
       <outputDirectory>/conf</outputDirectory>
     </file>
     <file>
       <source>${project.basedir}/couchdb-external-hook.py</source>
-      <fileMode>755</fileMode>
+      <fileMode>777</fileMode>
       <outputDirectory>/tools</outputDirectory>
     </file>
     <file>

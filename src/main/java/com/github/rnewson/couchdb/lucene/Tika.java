@@ -28,6 +28,7 @@ import org.apache.tika.exception.TikaException;
 import org.apache.tika.metadata.DublinCore;
 import org.apache.tika.metadata.HttpHeaders;
 import org.apache.tika.metadata.Metadata;
+import org.apache.tika.metadata.Property;
 
 public final class Tika {
 
@@ -40,6 +41,7 @@ public final class Tika {
     private final org.apache.tika.Tika tika = new org.apache.tika.Tika();
 
     private Tika() {
+    	tika.setMaxStringLength(-1);
     }
 
     public void parse(final InputStream in, final String contentType, final String fieldName, final Document doc)
@@ -65,6 +67,12 @@ public final class Tika {
     private void addAttribute(final String namespace, final String attributeName, final Metadata md, final Document doc) {
         if (md.get(attributeName) != null) {
             doc.add(text(namespace + attributeName, md.get(attributeName), false));
+        }
+    }
+
+    private void addAttribute(final String namespace, final Property property, final Metadata md, final Document doc) {
+        if (md.get(property) != null) {
+            doc.add(text(namespace + property.getName(), md.get(property), false));
         }
     }
 

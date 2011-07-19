@@ -17,8 +17,7 @@ package com.github.rnewson.couchdb.lucene.util;
  */
 
 import java.io.Reader;
-
-import net.sf.json.JSONObject;
+import java.util.Iterator;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.KeywordAnalyzer;
@@ -36,8 +35,11 @@ import org.apache.lucene.analysis.de.GermanAnalyzer;
 import org.apache.lucene.analysis.fr.FrenchAnalyzer;
 import org.apache.lucene.analysis.nl.DutchAnalyzer;
 import org.apache.lucene.analysis.ru.RussianAnalyzer;
+import org.apache.lucene.analysis.snowball.SnowballAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.th.ThaiAnalyzer;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public enum Analyzers {
 
@@ -97,12 +99,13 @@ public enum Analyzers {
     },
     PERFIELD {
         @Override
-        public Analyzer newAnalyzer(final String args) {
-            final JSONObject json = JSONObject.fromObject(args == null ? "{}" : args);
+        public Analyzer newAnalyzer(final String args) throws JSONException {
+            final JSONObject json = new JSONObject(args == null ? "{}" : args);
             final Analyzer defaultAnalyzer = Analyzers.getAnalyzer(json.optString(Constants.DEFAULT_FIELD, "standard"));
             final PerFieldAnalyzerWrapper result = new PerFieldAnalyzerWrapper(defaultAnalyzer);
-            for (final Object obj : json.keySet()) {
-                final String key = obj.toString();
+            final Iterator<?> it = json.keys();
+            while (it.hasNext()) {
+                final String key = it.next().toString();
                 if (Constants.DEFAULT_FIELD.equals(key))
                     continue;
                 result.addAnalyzer(key, Analyzers.getAnalyzer(json.getString(key)));
@@ -125,7 +128,13 @@ public enum Analyzers {
     SIMPLE {
         @Override
         public Analyzer newAnalyzer(final String args) {
-            return new SimpleAnalyzer();
+            return new SimpleAnalyzer(Constants.VERSION);
+        }
+    },
+    SNOWBALL {
+        @Override
+        public Analyzer newAnalyzer(final String args) {
+            return new SnowballAnalyzer(Constants.VERSION, args);
         }
     },
     STANDARD {
@@ -143,24 +152,24 @@ public enum Analyzers {
     WHITESPACE {
         @Override
         public Analyzer newAnalyzer(final String args) {
-            return new WhitespaceAnalyzer();
+            return new WhitespaceAnalyzer(Constants.VERSION);
         }
     };
 
     private static final class PorterStemAnalyzer extends Analyzer {
         @Override
         public TokenStream tokenStream(final String fieldName, final Reader reader) {
-            return new PorterStemFilter(new LowerCaseTokenizer(reader));
+            return new PorterStemFilter(new LowerCaseTokenizer(Constants.VERSION, reader));
         }
     }
 
-    public static Analyzer getAnalyzer(final String str) {
+    public static Analyzer getAnalyzer(final String str) throws JSONException {
         final String[] parts = str.split(":", 2);
         final String name = parts[0].toUpperCase();
         final String args = parts.length == 2 ? parts[1] : null;
         return Analyzers.valueOf(name).newAnalyzer(args);
     }
 
-    public abstract Analyzer newAnalyzer(final String args);
+    public abstract Analyzer newAnalyzer(final String args) throws JSONException;
 
 }
