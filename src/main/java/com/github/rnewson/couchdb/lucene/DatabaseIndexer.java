@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Writer;
 import java.net.SocketException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -35,7 +36,9 @@ import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.document.MapFieldSelector;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.FieldOption;
@@ -85,14 +88,16 @@ public final class DatabaseIndexer implements Runnable, ResponseHandler<Void> {
 		private IndexReader reader;
 		private final IndexWriter writer;
 		private final Database database;
+		private final View view;
 
 		public IndexState(final DocumentConverter converter,
 				final IndexWriter writer, final Analyzer analyzer,
-				final Database database) {
+				final Database database, final View view) {
 			this.converter = converter;
 			this.writer = writer;
 			this.analyzer = analyzer;
 			this.database = database;
+			this.view = view;
 		}
 
 		public synchronized IndexReader borrowReader(final boolean staleOk)
@@ -151,6 +156,14 @@ public final class DatabaseIndexer implements Runnable, ResponseHandler<Void> {
 
 		private synchronized String getEtag() {
 			return etag;
+		}
+
+		public UUID getUuid() throws JSONException, IOException {
+		    return database.getUuid();
+		}
+
+		public String getDigest() {
+		    return view.getDigest();
 		}
 
 		private String newEtag() {
@@ -312,7 +325,6 @@ public final class DatabaseIndexer implements Runnable, ResponseHandler<Void> {
 
 			try {
                 final JSONObject json = new JSONObject(line);
-                logger.debug(json);
 
                 if (json.has("error")) {
                 	logger.warn("Indexing stopping due to error: " + json);
@@ -401,6 +413,8 @@ public final class DatabaseIndexer implements Runnable, ResponseHandler<Void> {
 			result.put("disk_size", Utils.directorySize(reader.directory()));
 			result.put("doc_count", reader.numDocs());
 			result.put("doc_del_count", reader.numDeletedDocs());
+			result.put("uuid", state.getUuid());
+			result.put("digest", state.getDigest());
 			final JSONArray fields = new JSONArray();
 			for (final Object field : reader.getFieldNames(FieldOption.INDEXED)) {
 				if (((String) field).startsWith("_")) {
@@ -515,6 +529,15 @@ public final class DatabaseIndexer implements Runnable, ResponseHandler<Void> {
 							.getParameter("sort"));
 					final int skip = getIntParameter(req, "skip", 0);
 
+					final FieldSelector fieldSelector;
+					if (req.getParameter("include_fields") == null) {
+					    fieldSelector = null;
+					} else {
+					    final String[] fields = Utils.splitOnCommas(
+					            req.getParameter("include_fields"));
+					    fieldSelector = new MapFieldSelector(Arrays.asList(fields));
+					}
+
 					if (sort == null) {
 						td = searcher.search(q, null, skip + limit);
 					} else {
@@ -528,7 +551,9 @@ public final class DatabaseIndexer implements Runnable, ResponseHandler<Void> {
 					final JSONArray rows = new JSONArray();
 					final String[] fetch_ids = new String[max];
 					for (int i = skip; i < skip + max; i++) {
-						final Document doc = searcher.doc(td.scoreDocs[i].doc);
+						final Document doc = searcher.doc(td.scoreDocs[i].doc,
+						        fieldSelector);
+
 						final JSONObject row = new JSONObject();
 						final JSONObject fields = new JSONObject();
 
@@ -772,7 +797,7 @@ public final class DatabaseIndexer implements Runnable, ResponseHandler<Void> {
 					final IndexWriter writer = newWriter(dir);
 
 					final IndexState state = new IndexState(converter, writer,
-							view.getAnalyzer(), database);
+							view.getAnalyzer(), database, view);
 					state.setPendingSequence(seq);
 					states.put(view, state);
 				}
