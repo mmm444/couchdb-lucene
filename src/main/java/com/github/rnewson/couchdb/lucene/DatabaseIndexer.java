@@ -803,6 +803,9 @@ public final class DatabaseIndexer implements Runnable, ResponseHandler<Void> {
 				}
 			}
 		}
+		if (since == null) {
+		    since = UpdateSequence.START;
+		}
 		logger.debug("paths: " + paths);
 
 		this.lastCommit = now();
