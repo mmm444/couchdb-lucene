@@ -675,7 +675,11 @@ public final class DatabaseIndexer implements Runnable, ResponseHandler<Void> {
 	}
 
 	private String[] getQueryStrings(final HttpServletRequest req) {
-		return Utils.splitOnCommas(req.getParameter("q"));
+		if (getBooleanParameter(req, "qsplit", true)) {
+			return Utils.splitOnCommas(req.getParameter("q"));
+		} else {
+			return new String[] { req.getParameter("q") };
+		}
 	}
 
 	private void close() {
