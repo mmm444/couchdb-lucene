@@ -15,9 +15,9 @@
 # Do NOT "set -e"
 
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
-DESC="Description of the service"
+DESC="CouchDB-Lucene (fulltext search)"
 NAME="couchdb-lucene"
-DAEMON=/usr/local/couchdb-lucene-0.8.0/bin/run
+DAEMON=/opt/couchdb-lucene/bin/run
 PIDFILE=/var/run/$NAME.pid
 DAEMON_ARGS="$PIDFILE"
 SCRIPTNAME=/etc/init.d/$NAME
