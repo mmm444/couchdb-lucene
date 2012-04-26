@@ -14,6 +14,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -40,8 +41,8 @@ import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.MapFieldSelector;
 import org.apache.lucene.document.NumericField;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
@@ -58,6 +59,7 @@ import org.apache.lucene.search.TopFieldDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
+import org.apache.lucene.util.ReaderUtil;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -178,7 +180,7 @@ public final class DatabaseIndexer implements Runnable, ResponseHandler<Void> {
 			if (staleOk) {
 				return;
 			}
-			final UpdateSequence latest = database.getInfo().getUpdateSequence();
+			final UpdateSequence latest = database.getLastSequence();
 			synchronized (this) {
 			    long timeout = getSearchTimeout();
 				while (pending_seq.isEarlierThan(latest)) {
@@ -283,7 +285,7 @@ public final class DatabaseIndexer implements Runnable, ResponseHandler<Void> {
 
 		if ("_expunge".equals(command)) {
 			logger.info("Expunging deletes from " + state);
-			state.writer.expungeDeletes(false);
+			state.writer.forceMergeDeletes(false);
 						resp.setStatus(202);
 			ServletUtils.sendJsonSuccess(req, resp);
 			return;
@@ -291,7 +293,7 @@ public final class DatabaseIndexer implements Runnable, ResponseHandler<Void> {
 
 		if ("_optimize".equals(command)) {
 			logger.info("Optimizing " + state);
-			state.writer.optimize(false);
+			state.writer.forceMerge(1, false);
 			resp.setStatus(202);
 			ServletUtils.sendJsonSuccess(req, resp);
 			return;
@@ -416,11 +418,15 @@ public final class DatabaseIndexer implements Runnable, ResponseHandler<Void> {
 			result.put("uuid", state.getUuid());
 			result.put("digest", state.getDigest());
 			final JSONArray fields = new JSONArray();
-			for (final Object field : reader.getFieldNames(FieldOption.INDEXED)) {
-				if (((String) field).startsWith("_")) {
+			final Iterator<FieldInfo> it = ReaderUtil.getMergedFieldInfos(reader).iterator();
+			while (it.hasNext()) {
+				final FieldInfo fieldInfo = it.next();
+				if (fieldInfo.name.startsWith("_")) {
 					continue;
 				}
-				fields.put(field);
+				if (fieldInfo.isIndexed) {
+					fields.put(fieldInfo.name);
+				}
 			}
 			result.put("fields", fields);
 			result.put("last_modified", Long.toString(IndexReader
@@ -490,9 +496,10 @@ public final class DatabaseIndexer implements Runnable, ResponseHandler<Void> {
 				final Analyzer analyzer = state.analyzer(req.getParameter("analyzer"));
 				final Operator operator = "and".equalsIgnoreCase(req.getParameter("default_operator"))
 				? Operator.AND : Operator.OR;
-				final boolean lcExpTerms = getBooleanParameter(req, 
-						"lowercase_expanded_terms", true);
-				final boolean allowLeadingWildcard = getBooleanParameter(req, "allow_leading_wildcard", false);
+				final boolean lcExpTerms = getBooleanParameter(req,
+						"lowercase_expanded_terms", ini.getBoolean("lucene.lowercaseExpandedTerms", true));
+				final boolean allowLeadingWildcard = getBooleanParameter(req,
+						"allow_leading_wildcard", ini.getBoolean("lucene.allowLeadingWildcard", false));
 				final Query q = state.parse(queryString, operator, analyzer, lcExpTerms, allowLeadingWildcard);
 
 				final JSONObject queryRow = new JSONObject();

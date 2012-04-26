@@ -1,11 +1,8 @@
+[![Build Status](https://secure.travis-ci.org/rnewson/couchdb-lucene.png)](http://travis-ci.org/rnewson/couchdb-lucene)
+
 <h1>Version Compatibility</h1>
 
-<table>
-<tr><th>CouchDB</th><th>couchdb-lucene</th></tr>
-<tr><td>0.9.1, 0.10</td><td>0.4</td></tr>
-<tr><td>0.11</td><td>0.4-maint (0.4 with patch for trunk compatibility)</td></tr>
-<tr><td>0.10.x, 0.11.x, 1.0.x, 1.1.x</td><td>0.5.x, 0.6.x, 0.7.x</td></tr>
-</table>
+CouchDB-Lucene works with all version of CouchDB from 0.10 upwards.
 
 <h1>Breaking Changes</h1>
 
@@ -31,7 +28,7 @@ brew install couchdb-lucene
 </pre>
 
 <ol>
-<li>Install Maven 2.
+<li>Install Maven (2 or 3).
 <li>checkout repository
 <li>type 'mvn'
 <li>cd target
@@ -389,7 +386,7 @@ Couchdb-lucene uses <a href="http://lucene.apache.org/tika/">Apache Tika</a> to 
 
 <h1>Searching with couchdb-lucene</h1>
 
-You can perform all types of queries using Lucene's default <a href="http://lucene.apache.org/java/2_4_0/queryparsersyntax.html">query syntax</a>.
+You can perform all types of queries using Lucene's default <a href="http://lucene.apache.org/java/3_5_0/queryparsersyntax.html">query syntax</a>.
 
 <h2>Numeric range queries</h2>
 
@@ -628,3 +625,21 @@ url=http://foo:bar@localhost:5984/
 </pre>
 
 and couchdb-lucene will authenticate to couchdb.
+
+<h1>Other Tricks</h1>
+
+A couple of 'expert' options can be set in the couchdb-lucene.ini file;
+
+Leading wildcards are prohibited by default as they perform very poorly most of the time. You can enable them as follows;
+
+<pre>
+[lucene]
+allowLeadingWildcard=true
+</pre>
+
+Lucene automatically converts terms to lower case in wildcard situations. You can disable this with;
+
+<pre>
+[lucene]
+lowercaseExpandedTerms=false
+</pre>

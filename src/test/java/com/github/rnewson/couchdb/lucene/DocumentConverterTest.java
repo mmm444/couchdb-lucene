@@ -151,6 +151,18 @@ public class DocumentConverterTest {
         assertThat(result.size(), is(0));
     }
 
+    @Test
+    public void testJSONStringify() throws Exception {
+        final DocumentConverter converter = new DocumentConverter(
+                context,
+                view("function(doc) {var ret=new Document(); "
+                        + " ret.add(JSON.stringify({\"foo\":\"bar\"}), {\"field\":\"s\",\"store\":\"yes\"}); return ret;}"));
+        final Collection<Document> result = converter.convert(
+                doc("{_id:\"hello\"}"), settings(), null);
+        assertThat(result.size(), is(1));
+        assertThat(result.iterator().next().getValues("s")[0], is("{\"foo\":\"bar\"}"));
+    }
+
     @Test(expected=EvaluatorException.class)
     public void testBadCode() throws Exception {
         final DocumentConverter converter = new DocumentConverter(
@@ -293,7 +305,7 @@ public class DocumentConverterTest {
     private View view(final String fun) throws JSONException {
         final JSONObject json = new JSONObject();
         json.put("index", fun);
-        return new View(json);
+        return new View(null, json);
     }
 
 }
